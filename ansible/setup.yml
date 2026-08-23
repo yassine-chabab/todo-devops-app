@@ -1,0 +1,35 @@
+---
+- name: Configuration de l'environnement DevOps
+  hosts: all
+  become: yes
+  tasks:
+    - name: Mettre à jour la liste des paquets
+      apt:
+        update_cache: yes
+
+    - name: Installer Docker, Git, NGINX et PostgreSQL
+      apt:
+        name:
+          - git
+          - docker.io
+          - nginx
+          - postgresql
+          - postgresql-contrib
+        state: present
+
+    - name: Démarrer et activer les services Docker & NGINX
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - docker
+        - nginx
+        - postgresql
+
+    - name: Télécharger et installer Minikube & Kubectl (pour le nœud K8s)
+      shell: |
+        curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+        chmod +x ./kubectl
+        mv ./kubectl /usr/local/bin/kubectl
+      when: "'k8s' in inventory_hostname"
