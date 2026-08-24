@@ -1,0 +1,65 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials-id')
+        DOCKER_IMAGE = 'votre_user_dockerhub/todo-devops-app'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('1. Checkout Code') {
+            steps {
+                checkout scm
+                echo "Code récupéré depuis Git avec succès."
+            }
+        }
+
+        stage('2. Tests Unitaires') {
+            steps {
+                dir('app') {
+                    sh 'npm install'
+                    sh 'npm test'
+                }
+            }
+        }
+
+        stage('3. Build Image Docker') {
+            steps {
+                sh "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} ."
+                sh "docker tag ${DOCKER_IMAGE}:${IMAGE_TAG} ${DOCKER_IMAGE}:latest"
+            }
+        }
+
+        stage('4. Push vers DockerHub') {
+            steps {
+                sh "echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin"
+                sh "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                sh "docker push ${DOCKER_IMAGE}:latest"
+            }
+        }
+
+        stage('5. Déploiement sur Kubernetes') {
+            steps {
+                sh "kubectl apply -f k8s/secret.yaml"
+                sh "kubectl apply -f k8s/postgres-pv.yaml"
+                sh "kubectl apply -f k8s/postgres.yaml"
+                sh "kubectl apply -f k8s/app-deployment.yaml"
+                sh "kubectl apply -f k8s/app-service.yaml"
+                sh "kubectl rollout restart deployment/todo-app-deployment"
+            }
+        }
+    }
+
+    post {
+        always {
+            sh 'docker logout'
+        }
+        success {
+            echo "Pipeline exécuté avec succès !"
+        }
+        failure {
+            echo "Échec du pipeline CI/CD."
+        }
+    }
+}
