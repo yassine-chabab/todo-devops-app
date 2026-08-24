@@ -4,7 +4,6 @@
 *Département Mathématiques & Informatique*  
 **Module :** DevOps et Intégration Continue  
 
----
 
 ## Description du Projet
 
@@ -16,7 +15,6 @@ L'architecture s'appuie sur la philosophie DevOps en intégrant :
 - **Livraison Continue (CI/CD)** automatisée via un pipeline Jenkins.
 - **Bonnes pratiques Git** (Stratégie de branches `main` / `dev`).
 
----
 
 ## Architecture & Arborescence
 
